@@ -1,10 +1,14 @@
 import argparse
+import json
 import logging
 import os
 import sys
+from datetime import datetime
 
+from operations.dirb import DirBOperation
 from operations.httrack import HttrackOperation
 from operations.nmap import NmapOperation
+from output import Output
 
 logger = logging.getLogger('eyestalk')
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -16,8 +20,12 @@ logger.addHandler(console_handler)
 
 operations = {
     'nmap': NmapOperation(name='NMap'),
-    'httrack': HttrackOperation(name='Httrack')
+    'httrack': HttrackOperation(name='Httrack'),
+    'dirb': DirBOperation(name='DirB')
 }
+
+output = Output()
+output.command_line = sys.executable + ' ' + ' '.join(sys.argv)
 
 arg_parser = argparse.ArgumentParser(description='Recon Script')
 arg_parser.add_argument('--url', help='The url to recon')
@@ -48,14 +56,10 @@ if args.dir:
 else:
     args.dir = os.path.abspath('.')
 
-if not os.path.exists(args.dir):
-    logger.error(f'"{args.dir}" does not exist.')
-    exit(1)
-
-args.dir = os.path.join(args.dir, 'eyestalk')
+args.dir = os.path.join(args.dir, 'eyestalk', datetime.now().strftime('%Y%m%d%H%M%S'))
 
 if not os.path.exists(args.dir):
-    os.mkdir(args.dir)
+    os.makedirs(args.dir, exist_ok=True)
 
 log_filename = os.path.join(args.dir, 'eyestalk.log')
 file_handler = logging.FileHandler(filename=log_filename)
@@ -75,7 +79,14 @@ for key in operations:
     logger.info(f'Validating {op.name}')
 
     if op.validate(args) is False:
+        logger.error(f'Validation failed for {op.name}')
         exit(1)
 
     logger.info(f'Executing {op.name}')
-    # op.execute(args)
+    op.execute(args, output)
+
+dat_file = os.path.join(args.dir, 'eyestalk.dat')
+logger.info('Output data saved to ' + dat_file)
+
+with open(dat_file, 'w') as output_dat:
+    output_dat.write(json.dumps(output, indent=2))

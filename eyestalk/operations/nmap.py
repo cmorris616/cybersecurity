@@ -5,6 +5,7 @@ import os
 from nmap3 import nmap3
 
 from operations.recon_operation import ReconOperation
+from output import Output
 
 logger = logging.getLogger("nmap_operation")
 
@@ -16,10 +17,10 @@ class NmapOperation(ReconOperation):
 
         super().__init__(name, target_url)
 
-    def execute(self, args):
+    def execute(self, args, output: Output):
         nmap = nmap3.Nmap()
         nmap_results = nmap.nmap_version_detection(target=args.url)
-        print(json.dumps(nmap_results, indent=2))
+        output.nmap_results = nmap_results
 
         file_name = os.path.join(args.dir, 'nmap_results_raw.txt')
         append_comma = False
@@ -67,4 +68,12 @@ class NmapOperation(ReconOperation):
             results_file.write('\n\n')
 
     def validate(self, args):
-        pass
+        if not args.url:
+            logger.error("The url is required, but not found")
+            return False
+
+        if not args.dir:
+            logger.error("The output directory is not set")
+            return False
+
+        return True

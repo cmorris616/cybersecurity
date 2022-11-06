@@ -1,5 +1,7 @@
 import abc
 
+from output import Output
+
 
 class ReconOperation:
 
@@ -8,7 +10,7 @@ class ReconOperation:
         self.target_url = target_url
 
     @abc.abstractmethod
-    def execute(self, args):
+    def execute(self, args, output: Output):
         pass
 
     @abc.abstractmethod
